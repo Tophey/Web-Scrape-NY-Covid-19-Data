@@ -1,0 +1,211 @@
+#03/01_03/31
+"%notin%" <- Negate("%in%")
+# determing the number of cpu cores used for foreach command below
+numcores<- detectCores()
+#cl<-makeCluster(numcores-2) 
+registerDoParallel(numcores-2)
+list_331 <- #list_331 is the list of seperate tables 03/01 to 03/31
+        foreach(his_date = seq(1,31, 1), combine = cbind, .verbose = T) %dopar% {
+                urls<- url_430[his_date]
+                htmls <- read_html(urls, encoding = "ISO-8859-1") 
+                if (press_430$table[his_date] == "Yes") { ## Level 1 if 
+                #get the positive table
+                table_0 <- rvest::html_nodes(x = htmls,
+                                             xpath = '//table[contains(@id, "docx4j_tbl_0")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                table_1 <-rvest::html_nodes(x = htmls,
+                                            xpath = '//table[contains(@id, "docx4j_tbl_1")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                table_2<- rvest::html_nodes(x = htmls,
+                                            xpath = '//table[contains(@id, "docx4j_tbl_2")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                # special dates like 05/02
+                table_s5 <- rvest::html_nodes(x = htmls,
+                                              xpath = '//table[contains(@style, "width: 324px")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()  
+                # special date like 07/11
+                table_s7 <- rvest::html_nodes(x = htmls,
+                                              xpath = '//table[contains(@style, "width: 348px")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                ############## if special dates like 5/02
+                if (nrow(table_s5)>0 & nrow(table_1)==0) 
+                { table_pos <- rvest::html_nodes(x = htmls,
+                                                 xpath = '//table[contains(@style, "width: 324px")]') %>% 
+                        html_table(fill = TRUE) %>% .[1] %>% as.data.frame()      
+                #recode row and column names
+                rownames(table_pos) <- table_pos[,1]
+                table_pos <- table_pos[2:nrow(table_pos),2:3]
+                colnames(table_pos) <- c("total_positive", "new_positive")
+                # delete the comma and make the numbers "numeric"
+                for (i in 1:ncol(table_pos)){
+                        table_pos[,i] <- as.numeric(gsub(",","", table_pos[,i]))
+                        
+                }
+                #match the reported counties' positive
+                table_pos_death <- table_empty
+                table_pos_death[rownames(table_pos_death) %in% rownames(table_pos),1:2] <- 
+                        table_pos[,1:2]
+                table_pos_death$new_death <- NA # no death table means 0 death
+                return(table_pos_death) 
+                
+                ############# if special dates like 07/11, 07/12    
+                }else if (nrow(table_s7)>0& nrow(table_1)==0){
+                        table_pos <- rvest::html_nodes(x = htmls,
+                                                       xpath = '//table[contains(@style, "width: 348px")]') %>% 
+                                html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                        #recode row and column names
+                        rownames(table_pos) <- table_pos[,1]
+                        table_pos <- table_pos[2:nrow(table_pos),2:3]
+                        colnames(table_pos) <- c("total_positive", "new_positive")
+                        # delete the comma and make the numbers "numeric"
+                        for (i in 1:ncol(table_pos)){
+                                table_pos[,i] <- as.numeric(gsub(",","", table_pos[,i]))
+                                
+                        }
+                        
+                        #match the reported counties' positive
+                        table_pos_death <- table_empty
+                        table_pos_death[rownames(table_pos_death) %in% rownames(table_pos),1:2] <- 
+                                table_pos[,1:2]
+                        table_pos_death$new_death <- NA # no death table means 0 death
+                        
+                        return(table_pos_death)
+                        ###############if only table 0 pos
+                }else if(nrow(table_0)>0 & nrow(table_1)==0 & nrow(table_2)==0){
+                        table_pos <- table_0
+                        #recode row and column names
+                        rownames(table_pos) <- table_pos[,1]
+                        table_pos <- table_pos[2:nrow(table_pos),2:3]
+                        colnames(table_pos) <- c("total_positive", "new_positive")
+                        # delete the comma and make the numbers "numeric"
+                        for (i in 1:ncol(table_pos)){
+                                table_pos[,i] <- as.numeric(gsub(",","", table_pos[,i]))
+                                
+                        }
+                        
+                        #match the reported counties' positive
+                        table_pos_death <- table_empty
+                        table_pos_death[rownames(table_pos_death) %in% rownames(table_pos),1:2] <- 
+                                table_pos[,1:2]
+                        table_pos_death$new_death <- NA # no death table means 0 death
+                        
+                        return(table_pos_death)
+                        ################if there is table 1 but no table 2. Regardless of table 0
+                }else if(nrow(table_1)>0 & nrow(table_2)==0) {
+                        table_pos<- table_1
+                        #recode row and column names
+                        rownames(table_pos) <- table_pos[,1]
+                        table_pos <- table_pos[2:nrow(table_pos),2:3]
+                        colnames(table_pos) <- c("total_positive", "new_positive")
+                        # delete the comma and make the numbers "numeric"
+                        for (i in 1:ncol(table_pos)){
+                                table_pos[,i] <- as.numeric(gsub(",","", table_pos[,i]))
+                                
+                        }
+                        
+                        #match the reported counties' positive
+                        table_pos_death <- table_empty
+                        table_pos_death[rownames(table_pos_death) %in% rownames(table_pos),1:2] <- 
+                                table_pos[,1:2]
+                        table_pos_death$new_death <- NA # no death table means 0 death
+                        
+                        return(table_pos_death)
+                        ################if there is table 1 (pos) and 2 (death)
+                }else if (nrow(table_1)>0& nrow(table_2)>0) {
+                        table_pos <- table_1
+                        table_death<- table_2
+                        #recode row and column names
+                        rownames(table_pos) <- table_pos[,1]
+                        table_pos <- table_pos[2:nrow(table_pos),2:3]
+                        colnames(table_pos) <- c("total_positive", "new_positive")
+                        # delete the comma and make the numbers "numeric"
+                        for (i in 1:ncol(table_pos)){
+                                table_pos[,i] <- as.numeric(gsub(",","", table_pos[,i]))
+                                
+                        }
+                        
+                        #match the reported counties' positive
+                        table_pos_death <- table_empty
+                        table_pos_death[rownames(table_pos_death) %in% rownames(table_pos),1:2] <- 
+                                table_pos[,1:2]
+                        # the death table
+                        table_death <- rvest::html_nodes(x = htmls,
+                                                         xpath = '//table[contains(@id, "docx4j_tbl_2")]') %>%
+                                html_table(fill = TRUE) %>% .[1] %>% as.data.frame()
+                        #recode row and column names
+                        rownames(table_death) <- table_death[,1]
+                        table_death <- table_death[3:nrow(table_death),]
+                        colnames(table_death) <- c("county", "new_death")
+                        table_death[,2] <- as.numeric(gsub(",", "", table_death[, 2]))
+                        
+                        
+                        # Not including NYC boroughs' new deaths
+                        # create a "not in" function
+                        
+                        table_pos_death$new_death[rownames(table_pos_death) %in% rownames(table_death)] <- 
+                                table_death[rownames(table_death) %notin% 
+                                                    c("Bronx","Brooklyn", "Manhattan", "Staten Island","Richmond", "Queens", "Kings"),2]
+                        
+                        # add the numbers of NYC new deaths
+                        table_pos_death[rownames(table_pos_death)=="NYC","new_death"] <- 
+                                sum(table_death[rownames(table_death) %in% 
+                                                        c("Bronx","Brooklyn", "Manhattan", "Staten Island", "Richmond", "Queens", "Kings"),2])
+                        # add new deaths of "Non-NYs" (found in the source of 08/18/2020)
+                        table_pos_death["Non-NYs",3] <- table_death["Non-NYs", 2]
+                        # now table_pos_death has all the positive, new positive, and new deaths
+                        return(table_pos_death)
+                }
+                
+        }else {return(table_empty)}
+}
+#parallel::stopCluster(cl)
+
+# Edit date: 07/08/2021.
+# curent code in foreach does not take care of dates with no data
+# Not fixed yet!!
+
+
+##table_331 <- list.cbind(list_331[c(20,22:length(list_331))]) # 03/20- 03/31
+table_331 <- list.cbind(list_331[c(20:length(list_331))]) # 03/20- 03/31
+# Found a bit of issue in the county names on 03/20/2020."Albany County" 
+# instead of "Albany". And table_320 used "New York City" instead of "NYC" 
+
+table_320 <- rvest::html_nodes(x = read_html(url_431[20]),
+                               xpath = '//table[contains(@id, "docx4j_tbl_0")]') %>% 
+        html_table(fill = TRUE, header = TRUE) %>% .[1] %>% as.data.frame()
+table_320[table_320[,1]== "New York City",1]<- "NYC"
+name320 <- substr(table_320[table_320[,1] != "New York City",1], start = 1, stop = nchar(table_320[,1])-7)
+name320[22]<- "NYC"
+rownames(table_320) <- name320
+
+table_320 <- table_320[,2:3]
+colnames(table_320) <- c("total_positive", "new_positive")
+#match the reported counties' positive of 03/20/2020
+table_331[,1:2][rownames(table_331) %in% rownames(table_320),] <- 
+        table_320[,1:2]
+table_331[,3] <- NA
+nrow(table_320)
+sum(is.na(table_331[,58]))
+
+# export press releases in March (03/20, 03/22-03/31)
+# add the date row. press_release_0x is just for exporting
+press_release_03 <- data.frame(matrix(data = NA, 
+                                      nrow = nrow(table_331)+2, ncol = ncol(table_331)+1))
+press_release_03[3:nrow(press_release_03), 2:ncol(press_release_03)] <- table_331
+colnames(press_release_03) <- c("county", colnames(table_331))
+press_release_03[,1] <- c("","county",rownames(table_331))
+press_release_03[2, 2:ncol(press_release_03)] <- colnames(table_331)
+#press_release_03[1,seq(2,ncol(press_release_03), 3)] <- 
+#       as.character(as.Date(c(as.Date("2020-03-20"), 
+#                             as.character(as.Date("2020-03-22"):as.Date("2020-03-31"))),format = "%Y-%m-%d",
+#                          origin = as.Date("2020-03-20")-18341))
+#
+##press_release_03[1,seq(2,ncol(press_release_03), 3)] <- 
+##      as.character(as.Date(
+##            as.numeric(as.Date("2020-03-20"):as.Date("2020-03-31")),format = "%Y-%m-%d",
+##          origin = as.Date("2020-03-20")-18341))
+press_release_03[1,seq(2,ncol(press_release_03), 3)] <- 
+        as.character(as.Date(
+                as.Date("2020-03-20"):as.Date("2020-03-31"),format = "%Y-%m-%d",
+                origin = as.Date("2020-03-20")-18341))
+write_xlsx(press_release_03, path = "./output/press_03.xlsx")
